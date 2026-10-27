@@ -5,14 +5,6 @@
   <%- include('../partials/flash') %>
   <h1>ACL</h1>
 
-  <form method="post" action="/admin/roles" class="inline-form" novalidate>
-    <div class="field field-narrow">
-      <label for="newRoleName">Add Role</label>
-      <input id="newRoleName" name="name" type="text" required minlength="2" maxlength="30">
-    </div>
-    <button type="submit" class="secondary">+ Add Role</button>
-  </form>
-
   <div class="table-wrap section"><table class="matrix">
     <thead>
       <tr>
@@ -52,6 +44,13 @@
   <details class="section" id="roles">
     <summary>Role Management (<%= roles.length %>)</summary>
     <p class="hint">Role ที่ยังมีผู้ใช้ลบไม่ได้</p>
+    <form method="post" action="/admin/roles" class="inline-form" novalidate>
+      <div class="field field-narrow">
+        <label for="newRoleName">Add Role</label>
+        <input id="newRoleName" name="name" type="text" required minlength="2" maxlength="30">
+      </div>
+      <button type="submit" class="secondary">+ Add Role</button>
+    </form>
     <table>
       <thead>
         <tr>

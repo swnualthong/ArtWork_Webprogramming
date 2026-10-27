@@ -50,11 +50,7 @@ function formAction(operation, describeSuccess, redirectTo = (req) => previousPa
   };
 }
 
-export const createRole = formAction(
-  accessOperations.createRole,
-  () => 'Role created',
-  () => aclPagePath,
-);
+export const createRole = formAction(accessOperations.createRole, () => 'Role created', rolesSectionPath);
 export const updateRole = formAction(accessOperations.updateRole, () => 'Saved', rolesSectionPath);
 export const deleteRole = formAction(accessOperations.deleteRole, () => 'Deleted', rolesSectionPath);
 
