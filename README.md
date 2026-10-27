@@ -40,12 +40,13 @@ login ได้ทั้ง username และอีเมล
 
 | Username | รหัสผ่าน | Role |
 |---|---|---|
-| administrator | `passwordAdmin` | Admin |
-| bestart, catsausage, technicalart | `passwordArtist` | Artist |
-| bankkb | `passwordMember` | Subscriber |
-| stang | `passwordMember` | สมาชิกหมดอายุ (login แล้วกลับเป็น Member) |
-| tubfah | `passwordMember` | Member มีคำขอสมาชิกรออนุมัติ |
-| minviii, nooyimm, fuku | `passwordMember` | Member |
+| admin | `passwordAdmin` | Admin |
+| gohiw, catsausage, technicalboy | `passwordArtist` | Artist |
+| membersub | `passwordMember` | Subscriber |
+| memberexp | `passwordMember` | สมาชิกหมดอายุ (login แล้วกลับเป็น Member) |
+| memberfake | `passwordMember` | Member มีคำขอสมาชิกรออนุมัติ |
+| memberwrong | `passwordMember` | Member คำขอสมาชิกถูกปฏิเสธ |
+| member1, member2 | `passwordMember` | Member |
 
 ## โครงสร้าง
 

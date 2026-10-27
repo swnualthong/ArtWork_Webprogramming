@@ -1,14 +1,12 @@
 import { previousPagePath } from '../../middleware/errorHandlers.js';
 import { setFlash } from '../../middleware/flash.js';
-import { catalogEntry, permissionCatalog } from '../../config/permissionCatalog.js';
 import { getAclMatrix } from '../../services/aclService.js';
-import { listPermissions } from '../../services/permissionService.js';
-import { listResources } from '../../services/resourceService.js';
 import { listRoles } from '../../services/roleService.js';
 import { listUsers } from '../../services/userService.js';
 import * as accessOperations from '../shared/accessOperations.js';
 
-// ศูนย์ควบคุมของ Admin มี 2 หน้า: ผู้ใช้ กับ ACL (Matrix และจัดการ Role / Resource / Permission อยู่หน้าเดียวกัน)
+// ศูนย์ควบคุมของ Admin มี 2 หน้า: ผู้ใช้ กับ ACL (Matrix และจัดการ Role อยู่หน้าเดียวกัน)
+// Resource / Permission ไม่มีฟอร์มบนหน้าเว็บแล้ว (จัดการผ่าน /api/admin ได้) handler POST ด้านล่างยังเก็บไว้ตาม route ของใบงาน
 // สิทธิ์ของแต่ละ route ตรวจที่ chains.js ใน controller นี้ไม่ตรวจซ้ำ
 
 const aclPagePath = '/admin/acl';
@@ -38,32 +36,9 @@ export async function showUsers(req, res) {
   });
 }
 
-/** Resource พร้อม Permission ของมัน และบอกว่า Code ส่วนไหนใช้ key นั้น */
-function groupPermissionsByResource(resources, permissions) {
-  return resources.map((resource) => ({
-    ...resource,
-    permissions: permissions
-      .filter((permission) => permission.resourceId === resource.resourceId)
-      .map((permission) => ({ ...permission, usedBy: catalogEntry(permission.key)?.usedBy ?? '-' })),
-  }));
-}
-
-/**
- * หน้า ACL หน้าเดียว: Access Matrix (แถว = Permission, คอลัมน์ = Role) อยู่ด้านบน
- * ด้านล่างเป็นส่วนที่พับไว้: จัดการ Role · Resource และ Permission · แถวจริงในตาราง acl
- */
+/** หน้า ACL หน้าเดียว: Access Matrix (แถว = Permission, คอลัมน์ = Role) อยู่ด้านบน ด้านล่างเป็นส่วนจัดการ Role ที่พับไว้ */
 export async function showAcl(_req, res) {
-  const [matrix, resources, permissions] = await Promise.all([getAclMatrix(), listResources(), listPermissions()]);
-  // key ที่ Code รองรับแต่ไม่มีในตารางแล้ว (ถูกลบไป) ให้หน้าเว็บบอกว่าเพิ่มกลับได้
-  const missingKeys = permissionCatalog
-    .map((entry) => entry.key)
-    .filter((key) => !permissions.some((permission) => permission.key === key));
-  res.render('admin/acl', {
-    activeTab: 'acl',
-    ...matrix,
-    resources: groupPermissionsByResource(resources, permissions),
-    missingKeys,
-  });
+  res.render('admin/acl', { activeTab: 'acl', ...(await getAclMatrix()) });
 }
 
 /** สร้าง handler ของฟอร์ม: ทำงาน แล้วตั้งข้อความผล แล้วกลับหน้าเดิม (หรือหน้าที่กำหนด) */

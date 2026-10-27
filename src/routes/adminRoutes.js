@@ -8,7 +8,7 @@ import { chains } from './chains.js';
 
 /**
  * ศูนย์ควบคุม /admin/* แยก Layout เมนู และกลุ่ม route ออกจากเว็บทั่วไป (PDF §5.1)
- * เมนูหลักมี 2 หน้า: /admin/users และ /admin/acl (Matrix กับจัดการ Role / Resource / Permission)
+ * เมนูหลักมี 2 หน้า: /admin/users และ /admin/acl (Matrix กับจัดการ Role)
  * route ตามใบงาน: POST /{table} เพิ่ม · POST /{table}/:id แก้ · POST /{table}/:id/delete ลบ
  * ผู้ใช้ / Role / Resource / Permission / ACL เป็นของ Admin เท่านั้น · คำขอสมาชิกกับ Logs ให้ Role อื่นได้ผ่าน ACL
  */

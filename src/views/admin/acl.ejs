@@ -1,6 +1,6 @@
 <%- include('../partials/head', { title: 'ACL · Admin' }) %>
 <%- include('../partials/adminHeader') %>
-<%# Matrix: แถว = permission, คอลัมน์ = role ส่วนจัดการ Role/Resource/Permission พับไว้ข้างล่าง %>
+<%# Matrix: แถว = permission, คอลัมน์ = role ส่วนจัดการ Role พับไว้ข้างล่าง %>
 <main class="container">
   <%- include('../partials/flash') %>
   <h1>ACL</h1>
@@ -94,119 +94,6 @@
                 </form>
               <% } %>
             </td>
-          </tr>
-        <% } %>
-      </tbody>
-    </table>
-  </details>
-
-  <details class="section" id="permissions">
-    <summary>Resource and Permission Management (<%= resources.length %> / <%= groups.reduce((sum, group) => sum + group.permissions.length, 0) %>)</summary>
-    <p class="hint">เพิ่มได้เฉพาะ key ที่โค้ดใช้ ลบได้เมื่อไม่มี Role ไหนได้สิทธิ์</p>
-    <form method="post" action="/admin/resources" class="inline-form" novalidate>
-      <div class="field field-narrow">
-        <label for="newResourceName">New Resource</label>
-        <input id="newResourceName" name="resourceName" type="text" required pattern="[a-z][a-zA-Z]{1,19}" maxlength="20" autocapitalize="none">
-      </div>
-      <button type="submit" class="secondary">+ Add Resource</button>
-    </form>
-    <form method="post" action="/admin/permissions" class="inline-form" novalidate>
-      <div class="field field-narrow">
-        <label for="newPermissionResource">Resource</label>
-        <select id="newPermissionResource" name="resourceId" required>
-          <% for (const resource of resources) { %><option value="<%= resource.resourceId %>"><%= resource.resourceName %></option><% } %>
-        </select>
-      </div>
-      <div class="field field-narrow">
-        <label for="newPermissionAction">action</label>
-        <input id="newPermissionAction" name="action" type="text" required pattern="[a-z][a-zA-Z]{1,19}" maxlength="20" autocapitalize="none" placeholder="read">
-      </div>
-      <button type="submit" class="secondary">+ Add Permission</button>
-    </form>
-    <% if (missingKeys.length > 0) { %>
-      <p class="hint">ยังไม่มีในตาราง: <% for (const key of missingKeys) { %><code><%= key %></code> <% } %></p>
-    <% } %>
-    <table>
-      <thead>
-        <tr>
-          <th scope="col">ID</th>
-          <th scope="col">Name</th>
-          <th scope="col">Description</th>
-          <th scope="col">Used by</th>
-          <th scope="col"></th>
-        </tr>
-      </thead>
-      <% for (const resource of resources) { %>
-        <tbody>
-          <tr class="matrix-group">
-            <td><%= resource.resourceId %></td>
-            <th scope="rowgroup"><%= resource.resourceName %></th>
-            <td><%= resource.description %></td>
-            <td></td>
-            <td>
-              <details>
-                <summary class="small">Edit</summary>
-                <form method="post" action="/admin/resources/<%= resource.resourceId %>" class="form-narrow" novalidate>
-                  <div class="field">
-                    <label for="resourceDescription<%= resource.resourceId %>">Description</label>
-                    <input id="resourceDescription<%= resource.resourceId %>" name="description" type="text" maxlength="200" value="<%= resource.description %>">
-                  </div>
-                  <button type="submit">Save</button>
-                </form>
-              </details>
-              <form method="post" action="/admin/resources/<%= resource.resourceId %>/delete" class="inline" data-confirm="Delete resource <%= resource.resourceName %>?">
-                <button type="submit" class="link small">Delete</button>
-              </form>
-            </td>
-          </tr>
-          <% for (const permission of resource.permissions) { %>
-            <tr>
-              <td><%= permission.permissionId %></td>
-              <td><code><%= permission.key %></code></td>
-              <td><%= permission.description %></td>
-              <td class="small muted"><%= permission.usedBy %></td>
-              <td>
-                <details>
-                  <summary class="small">Edit</summary>
-                  <form method="post" action="/admin/permissions/<%= permission.permissionId %>" class="form-narrow" novalidate>
-                    <div class="field">
-                      <label for="permissionDescription<%= permission.permissionId %>">Description</label>
-                      <input id="permissionDescription<%= permission.permissionId %>" name="description" type="text" maxlength="200" value="<%= permission.description %>">
-                    </div>
-                    <button type="submit">Save</button>
-                  </form>
-                </details>
-                <form method="post" action="/admin/permissions/<%= permission.permissionId %>/delete" class="inline" data-confirm="Delete permission <%= permission.key %>?">
-                  <button type="submit" class="link small">Delete</button>
-                </form>
-              </td>
-            </tr>
-          <% } %>
-        </tbody>
-      <% } %>
-    </table>
-  </details>
-
-  <details class="section" id="rows">
-    <summary>acl table (<%= rows.length %> rows)</summary>
-    <table>
-      <thead>
-        <tr>
-          <th scope="col">acl_id</th>
-          <th scope="col">Role</th>
-          <th scope="col">resource</th>
-          <th scope="col">action</th>
-          <th scope="col">granted_at</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% for (const row of rows) { %>
-          <tr>
-            <td><%= row.aclId %></td>
-            <td><%= row.roleName %></td>
-            <td><%= row.resourceName %></td>
-            <td><%= row.action %></td>
-            <td class="small"><%= formatDateTime(row.grantedAt) %></td>
           </tr>
         <% } %>
       </tbody>

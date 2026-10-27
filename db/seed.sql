@@ -1,41 +1,6 @@
--- seed.sql: ข้อมูลสาธิตพร้อมรูปจาก SeedData/
---
--- วิธีที่ง่ายที่สุด (ใน artistProject/):  npm run demo:reset
---   ล้างฐานจาก DATABASE_URL + ล้าง uploads/ แล้วรัน schema.sql + ไฟล์นี้ และคัดลอกรูปจาก ../SeedData ให้ครบในคำสั่งเดียว
---
--- ลำดับการรันเอง (ถ้าไม่ใช้ npm run demo:reset)
---   1) คัดลอกรูปจาก ../SeedData เข้า uploads/files (PowerShell, รันซ้ำได้):
---
---        New-Item -ItemType Directory -Force uploads\files | Out-Null
---        Select-String -Path db\seed.sql -Pattern "^\s+\('([0-9a-f-]{36})', '([^']+)'" | ForEach-Object {
---          $m = $_.Matches[0].Groups
---          Copy-Item -LiteralPath (Join-Path '..\SeedData' $m[2].Value) -Destination "uploads\files\$($m[1].Value)" -Force
---        }
---
---   2) docker exec -i artPostgreSQL18 psql -U swnpostgre -d artist < db/schema.sql
---   3) docker exec -i artPostgreSQL18 psql -U swnpostgre -d artist < db/seed.sql
---      (pgAdmin: เปิดไฟล์นี้ใน Query Tool แล้ว Execute ทั้งไฟล์ครั้งเดียว)
---
---   ห้ามลบ uploads/ หลังขั้นที่ 1 · DB มีข้อมูลอยู่แล้วไฟล์นี้จะหยุดทันที → รัน schema.sql ก่อน
---
--- บัญชี (login ด้วย username หรืออีเมลก็ได้)
---   administrator  passwordAdmin   Admin (Super User)
---   bestart, catsausage, technicalart          passwordArtist  Artist
---   bankkb   passwordMember  Subscriber ใช้งานอยู่ (slip01)
---   stang    passwordMember  เคยเป็นสมาชิก หมดอายุแล้ว (slip02) → login แล้วถูกลดเป็น Member + Log Expire, คลังเบลองานสมาชิก
---   minviii  passwordMember  Member
---   tubfah   passwordMember  Member ส่งสลิปรออนุมัติ (slip03) → อยู่ในคิวคำขอสมาชิก
---   nooyimm  passwordMember  Member เคยถูกปฏิเสธ เพราะแนบไฟล์ที่ไม่ใช่สลิป (slip04)
---   fuku     passwordMember  Member
---
--- ปรับข้อมูล: แก้ VALUES ในแต่ละส่วน · "กี่วันก่อน" นับจากเวลาที่รัน จึงรันวันไหนวันที่ก็สัมพันธ์กันเสมอ
--- เปลี่ยนรูปใน SeedData: ขนาดไฟล์ (size_bytes) ในส่วน 4 ต้องตรงกับไฟล์จริง ไม่งั้นรูปโหลดไม่ขึ้น
---   ดูขนาดด้วย (Get-Item ..\SeedData\<path>).Length · เพิ่มไฟล์ใหม่ใช้ uuid จาก [guid]::NewGuid()
--- ภาพการ์ด (thumbnail) ใช้รูปปกขนาดเต็ม · ระบบจริงย่อเป็น webp ตอนอัปโหลดผ่านเว็บ
 
 BEGIN;
 
--- กันรันซ้อนบนฐานที่มีข้อมูลอยู่แล้ว
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM roles) THEN
@@ -68,20 +33,20 @@ SELECT r.resource_id, p.action, p.description
 FROM (VALUES
   ( 1, 'artwork',      'read',     'ดูงาน ค้นหา และหน้าโปรไฟล์ศิลปิน'),
   ( 2, 'artwork',      'create',   'ลงงานใหม่พร้อมรูป'),
-  ( 3, 'artwork',      'update',   'แก้ไขงานและรูปของตน (OWN-1)'),
-  ( 4, 'artwork',      'delete',   'ลบงานของตน (OWN-1)'),
+  ( 3, 'artwork',      'update',   'แก้ไขงานและรูปของตน'),
+  ( 4, 'artwork',      'delete',   'ลบงานของตน'),
   ( 5, 'artwork',      'like',     'กดถูกใจงาน (หลังดาวน์โหลด)'),
   ( 6, 'file',         'download', 'ดาวน์โหลดและดูภาพชัดของงานสมาชิก (งานฟรีแค่ login)'),
   ( 7, 'comment',      'create',   'แสดงความคิดเห็น'),
-  ( 8, 'comment',      'delete',   'ลบความคิดเห็นของตน (OWN-5)'),
+  ( 8, 'comment',      'delete',   'ลบความคิดเห็นของตน'),
   ( 9, 'comment',      'moderate', 'ลบความคิดเห็นของทุกคน'),
-  (10, 'subscription', 'read',     'ดูสถานะและคำขอสมาชิกของตน (OWN-2)'),
+  (10, 'subscription', 'read',     'ดูสถานะและคำขอสมาชิกของตน'),
   (11, 'subscription', 'create',   'ส่งคำขอสมัครสมาชิกพร้อมสลิป'),
   (12, 'subscription', 'review',   'ดูคิวคำขอสมาชิกและสลิปของทุกคน'),
   (13, 'subscription', 'approve',  'อนุมัติ/ปฏิเสธคำขอสมาชิก'),
-  (14, 'library',      'read',     'ดูคลังงานที่ดาวน์โหลดของตน (OWN-3)'),
-  (15, 'profile',      'read',     'ดูโปรไฟล์และข้อมูลบัญชีของตน (OWN-4)'),
-  (16, 'profile',      'update',   'แก้โปรไฟล์ รหัสผ่าน และรูปโปรไฟล์ของตน (OWN-4)'),
+  (14, 'library',      'read',     'ดูคลังงานที่ดาวน์โหลดของตน'),
+  (15, 'profile',      'read',     'ดูโปรไฟล์และข้อมูลบัญชีของตน'),
+  (16, 'profile',      'update',   'แก้โปรไฟล์ รหัสผ่าน และรูปโปรไฟล์ของตน'),
   (17, 'log',          'read',     'ดูและกรอง Log')
 ) AS p (sort_order, resource_name, action, description)
 JOIN resources r ON r.resource_name = p.resource_name
@@ -143,21 +108,21 @@ INSERT INTO users (email, username, password_hash, display_name, bio, role_id, c
 SELECT a.email, a.username, a.password_hash, a.display_name, a.bio, r.role_id,
        now() - a.days_ago * interval '1 day', now() - a.days_ago * interval '1 day'
 FROM (VALUES
-  ('admin@artmail.com', 'administrator', '$2b$12$Z8kd777dRAazQBDRTR8S6eh0qH.6HvwmaulEmTSYlS956k2eAmI8K', 'Sorrawit Nualthong', 'hello I am administrator!', 'Admin', 200),
-  ('artist_ts@artmail.com', 'bestart', '$2b$12$/ZIBJNqAsN6wTlvv/mOSj.GgNDTQZkRt6TfDi0bvOYa9XCmcpxs4y', 'Thanawat Sathimanee', 'Anime & Game art', 'Artist', 160),
+  ('admin@artmail.com', 'admin', '$2b$12$Z8kd777dRAazQBDRTR8S6eh0qH.6HvwmaulEmTSYlS956k2eAmI8K', 'Sorrawit Nualthong', 'hello I am admin!', 'Admin', 200),
+  ('artist_ts@artmail.com', 'gohiw', '$2b$12$/ZIBJNqAsN6wTlvv/mOSj.GgNDTQZkRt6TfDi0bvOYa9XCmcpxs4y', 'Thanawat Sathimanee', 'Anime & Game art', 'Artist', 160),
   ('artist_cs@artmail.com', 'catsausage', '$2b$12$/ZIBJNqAsN6wTlvv/mOSj.GgNDTQZkRt6TfDi0bvOYa9XCmcpxs4y', 'Cat Sausage Studio', 'Follow me: https://www.youtube.com/channel/UCyMip3BlR8kLb3Yu2DZTiSw', 'Artist', 140),
-  ('artist_tb@artmail.com', 'technicalart', '$2b$12$/ZIBJNqAsN6wTlvv/mOSj.GgNDTQZkRt6TfDi0bvOYa9XCmcpxs4y', 'TechnicalBoy Artlab', 'free art no license', 'Artist', 100),
-  ('krittanai@gmail.com', 'bankkb', '$2b$12$aTDuUZ4cRB87x4RCVKq1OelH8.DhFdyoDpmYn1lR2GT1wZkM4U9WW', 'krittanaiKB', '3rd years Engineer student at KMITL', 'Subscriber', 90),
-  ('stang123@gmail.com', 'stang', '$2b$12$aTDuUZ4cRB87x4RCVKq1OelH8.DhFdyoDpmYn1lR2GT1wZkM4U9WW', 'StangFin', 'no bio', 'Subscriber', 85),
-  ('barbatos@gmail.com', 'minviii', '$2b$12$aTDuUZ4cRB87x4RCVKq1OelH8.DhFdyoDpmYn1lR2GT1wZkM4U9WW', 'BarbatosVIII', 'not thing here', 'Member', 60),
-  ('tub@gmail.com', 'tubfah', '$2b$12$aTDuUZ4cRB87x4RCVKq1OelH8.DhFdyoDpmYn1lR2GT1wZkM4U9WW', 'TubHH', 'nobio', 'Member', 20),
-  ('mameow@gmail.com', 'nooyimm', '$2b$12$aTDuUZ4cRB87x4RCVKq1OelH8.DhFdyoDpmYn1lR2GT1wZkM4U9WW', 'มะเมี๊ยวซ์..', 'Thank you for teaching me that the most valuable person in my life is myself.', 'Member', 45),
-  ('vyvy@gmail.com', 'fuku', '$2b$12$aTDuUZ4cRB87x4RCVKq1OelH8.DhFdyoDpmYn1lR2GT1wZkM4U9WW', 'ฟุกุซ์ | จะถูกหวย', 'no bio', 'Member', 10)
+  ('artist_tb@artmail.com', 'technicalboy', '$2b$12$/ZIBJNqAsN6wTlvv/mOSj.GgNDTQZkRt6TfDi0bvOYa9XCmcpxs4y', 'TechnicalBoy Artlab', 'free art no license', 'Artist', 100),
+  ('krittanai@gmail.com', 'membersub', '$2b$12$aTDuUZ4cRB87x4RCVKq1OelH8.DhFdyoDpmYn1lR2GT1wZkM4U9WW', 'krittanaiKB', '3rd years Engineer student at KMITL', 'Subscriber', 90),
+  ('stang123@gmail.com', 'memberexp', '$2b$12$aTDuUZ4cRB87x4RCVKq1OelH8.DhFdyoDpmYn1lR2GT1wZkM4U9WW', 'StangFin', 'no bio', 'Subscriber', 85),
+  ('barbatos@gmail.com', 'member1', '$2b$12$aTDuUZ4cRB87x4RCVKq1OelH8.DhFdyoDpmYn1lR2GT1wZkM4U9WW', 'BarbatosVIII', 'not thing here', 'Member', 60),
+  ('tub@gmail.com', 'memberfake', '$2b$12$aTDuUZ4cRB87x4RCVKq1OelH8.DhFdyoDpmYn1lR2GT1wZkM4U9WW', 'TubHH', 'nobio', 'Member', 20),
+  ('mameow@gmail.com', 'memberwrong', '$2b$12$aTDuUZ4cRB87x4RCVKq1OelH8.DhFdyoDpmYn1lR2GT1wZkM4U9WW', 'มะเมี๊ยวซ์..', 'Thank you for teaching me that the most valuable person in my life is myself.', 'Member', 45),
+  ('vyvy@gmail.com', 'member2', '$2b$12$aTDuUZ4cRB87x4RCVKq1OelH8.DhFdyoDpmYn1lR2GT1wZkM4U9WW', 'ฟุกุซ์ | จะถูกหวย', 'no bio', 'Member', 10)
 ) AS a (email, username, password_hash, display_name, bio, role_name, days_ago)
 JOIN roles r ON r.name = a.role_name;
 
 -- ส่วน 2: คำขอสมาชิก
--- bankkb ใช้งานอยู่ · stang หมดอายุ (Role ยังเป็น Subscriber จนกว่าจะ login) · tubfah รออนุมัติ · nooyimm ถูกปฏิเสธ
+-- membersub ใช้งานอยู่ · memberexp หมดอายุ (Role ยังเป็น Subscriber จนกว่าจะ login) · memberfake รออนุมัติ · memberwrong ถูกปฏิเสธ
 INSERT INTO subscriptions (user_id, status, requested_at, reviewed_by, reviewed_at, review_note, starts_at, ends_at)
 SELECT u.user_id, v.status,
        now() - v.requested_days_ago * interval '1 day',
@@ -168,13 +133,13 @@ SELECT u.user_id, v.status,
        CASE WHEN v.status = 'approved' THEN now() - (v.reviewed_days_ago - 30) * interval '1 day' END
 FROM (VALUES
   -- username,  สถานะ,      ส่งกี่วันก่อน, ตรวจกี่วันก่อน, เหตุผล (rejected)
-  ('bankkb',  'approved',  12.4, 11.9, NULL),
-  ('stang',   'approved',  76.2, 75.8, NULL),
-  ('tubfah',  'pending',    0.9, NULL, NULL),
-  ('nooyimm', 'rejected',   6.3,  5.7, 'ไฟล์ที่แนบไม่ใช่สลิปการโอนเงิน กรุณาส่งสลิปใหม่')
+  ('membersub',  'approved',  12.4, 11.9, NULL),
+  ('memberexp',   'approved',  76.2, 75.8, NULL),
+  ('memberfake',  'pending',    0.9, NULL, NULL),
+  ('memberwrong', 'rejected',   6.3,  5.7, 'ไฟล์ที่แนบไม่ใช่สลิปการโอนเงิน กรุณาส่งสลิปใหม่')
 ) AS v (username, status, requested_days_ago, reviewed_days_ago, note)
 JOIN users u ON u.username = v.username
-CROSS JOIN (SELECT user_id FROM users WHERE username = 'administrator') AS admin;
+CROSS JOIN (SELECT user_id FROM users WHERE username = 'admin') AS admin;
 
 -- ส่วน 3: งาน
 -- demo_key = โฟลเดอร์รูปใน SeedData · ชื่องานของศิลปินคนเดียวกันห้ามซ้ำ
@@ -183,17 +148,17 @@ CREATE TEMP TABLE demo_artwork (
 ) ON COMMIT DROP;
 
 INSERT INTO demo_artwork VALUES
-  ('best/1st (free)', 'bestart', 'Moonlight Maiden', 'หญิงสาวใต้แสงจันทร์ เรนเดอร์สไตล์เกม 3D', 'free', 'character portrait 3d game', 150.4),
-  ('best/2nd (free)', 'bestart', 'Swordsman in Black', 'จอมยุทธ์ชุดดำ ฝึกจัดแสงโทนขาวดำ', 'free', 'character portrait 3d', 120.6),
-  ('best/3rd (paid)', 'bestart', 'Young Master', 'คุณชายตระกูลใหญ่ ภาพครึ่งตัว', 'subscriber', 'character portrait game', 70.2),
-  ('best/4th (paid)', 'bestart', 'Silver Princess', 'องค์หญิงชุดเงิน ลงรายละเอียดเครื่องประดับ', 'subscriber', 'character portrait anime', 25.5),
+  ('best/1st (free)', 'gohiw', 'Moonlight Maiden', 'หญิงสาวใต้แสงจันทร์ เรนเดอร์สไตล์เกม 3D', 'free', 'character portrait 3d game', 150.4),
+  ('best/2nd (free)', 'gohiw', 'Swordsman in Black', 'จอมยุทธ์ชุดดำ ฝึกจัดแสงโทนขาวดำ', 'free', 'character portrait 3d', 120.6),
+  ('best/3rd (paid)', 'gohiw', 'Young Master', 'คุณชายตระกูลใหญ่ ภาพครึ่งตัว', 'subscriber', 'character portrait game', 70.2),
+  ('best/4th (paid)', 'gohiw', 'Silver Princess', 'องค์หญิงชุดเงิน ลงรายละเอียดเครื่องประดับ', 'subscriber', 'character portrait anime', 25.5),
   ('cat/1st (paid)', 'catsausage', 'Frost Prince — 3 Poses', 'ตัวละครเรืองแสงฟ้า 3 มุม ขนาด 2560×1440', 'subscriber', 'character 3d game', 135.3),
   ('cat/2nd (paid)', 'catsausage', 'HSHM Scenery Pack', 'ฉากเมืองจีนโบราณ 10 ภาพ ใช้ทำพื้นหลังได้', 'subscriber', 'landscape concept game', 100.7),
   ('cat/3rd (paid)', 'catsausage', 'Pink Neko Idol', 'ไอดอลหูแมวโทนชมพู 4 ภาพ', 'subscriber', 'character anime 3d', 65.1),
   ('cat/4th (paid)', 'catsausage', 'AI Nature Wallpaper', 'ภาพธรรมชาติจาก AI 4 ภาพ แนวตั้งสำหรับมือถือ', 'subscriber', 'landscape ai digital', 30.8),
   ('cat/5th (paid)', 'catsausage', 'Night Drive FH6', 'รถสปอร์ตกลางเมืองยามค่ำ จากเกม Forza Horizon 6', 'subscriber', 'car game digital', 4.3),
-  ('ping/1st (free)', 'technicalart', 'Cat in Bra (8 สี)', 'มีมแมวใส่บรา 8 สี เอาไปใช้ได้เลย', 'free', 'meme cat', 95.5),
-  ('ping/2nd (free)', 'technicalart', 'Cat Sticker Pack', 'สติกเกอร์แมว 10 ท่า ไม่สงวนลิขสิทธิ์', 'free', 'sticker cat meme', 15.2);
+  ('ping/1st (free)', 'technicalboy', 'Cat in Bra (8 สี)', 'มีมแมวใส่บรา 8 สี เอาไปใช้ได้เลย', 'free', 'meme cat', 95.5),
+  ('ping/2nd (free)', 'technicalboy', 'Cat Sticker Pack', 'สติกเกอร์แมว 10 ท่า ไม่สงวนลิขสิทธิ์', 'free', 'sticker cat meme', 15.2);
 
 INSERT INTO artworks (artist_id, title, description, visibility, created_at, updated_at)
 SELECT u.user_id, d.title, d.description, d.visibility, now() - d.days_ago * interval '1 day', now() - d.days_ago * interval '1 day'
@@ -280,16 +245,16 @@ INSERT INTO demo_file VALUES
   ('9af958be-3781-4d1f-bdc9-9b9e6d7bec92', 'ping/2nd (free)/Meme (18).jpg', 'image', 'ping/2nd (free)', 'Meme (18).jpg', 'image/jpeg', 73162, false),
   ('4ad170a3-82ff-433d-badc-c42daff7ef3a', 'ping/2nd (free)/Meme (19).jpg', 'image', 'ping/2nd (free)', 'Meme (19).jpg', 'image/jpeg', 110472, false),
   ('b70b7166-3af5-4dcb-a030-d9c06a2392f8', 'ping/2nd (free)/Meme (10).jpg', 'thumbnail', 'ping/2nd (free)', 'Meme (10).jpg', 'image/jpeg', 78535, false),
-  ('1cab48ed-cd53-4b0c-b231-95dc05a4ab0f', 'bestart.jpg', 'avatar', 'bestart', 'bestart.jpg', 'image/jpeg', 75177, false),
+  ('1cab48ed-cd53-4b0c-b231-95dc05a4ab0f', 'bestart.jpg', 'avatar', 'gohiw', 'gohiw.jpg', 'image/jpeg', 75177, false),
   ('24b2f5e5-a7b7-4c45-9e57-5ebb9c60cc80', 'catsausage.jpg', 'avatar', 'catsausage', 'catsausage.jpg', 'image/jpeg', 14870, false),
-  ('e21d1003-066c-4414-98c6-536999ef08df', 'technicalart.jpg', 'avatar', 'technicalart', 'technicalart.jpg', 'image/jpeg', 98674, false),
-  ('05b9e5f1-0dc7-4ff4-ac7a-7250b71ac712', 'barbatos.jpg', 'avatar', 'minviii', 'barbatos.jpg', 'image/jpeg', 112523, false),
-  ('554bafd6-cb6e-453a-8902-edefc7522a49', 'nooyimm.jpeg', 'avatar', 'nooyimm', 'nooyimm.jpeg', 'image/jpeg', 189146, false),
-  ('2911b188-f61a-4c14-842c-07cc0865c789', 'fuku.jpg', 'avatar', 'fuku', 'fuku.jpg', 'image/jpeg', 32600, false),
-  ('6a519b0a-4dcb-4351-b0cc-20e29573dd7d', 'slip01.jpg', 'slip', 'bankkb', 'slip01.jpg', 'image/jpeg', 52953, false),
-  ('6a84d2c7-df0d-473f-8ab5-35c935540797', 'slip02.jpg', 'slip', 'stang', 'slip02.jpg', 'image/jpeg', 52402, false),
-  ('7e4e3405-ba52-4e97-9523-66606bc48b3e', 'slip03.jpg', 'slip', 'tubfah', 'slip03.jpg', 'image/jpeg', 53595, false),
-  ('ccfb51b8-4c91-4886-bbc1-ae75c48ef465', 'slip04.png', 'slip', 'nooyimm', 'slip04.png', 'image/png', 1706755, false);
+  ('e21d1003-066c-4414-98c6-536999ef08df', 'technicalart.jpg', 'avatar', 'technicalboy', 'technicalboy.jpg', 'image/jpeg', 98674, false),
+  ('05b9e5f1-0dc7-4ff4-ac7a-7250b71ac712', 'barbatos.jpg', 'avatar', 'member1', 'barbatos.jpg', 'image/jpeg', 112523, false),
+  ('554bafd6-cb6e-453a-8902-edefc7522a49', 'nooyimm.jpeg', 'avatar', 'memberwrong', 'memberwrong.jpeg', 'image/jpeg', 189146, false),
+  ('2911b188-f61a-4c14-842c-07cc0865c789', 'fuku.jpg', 'avatar', 'member2', 'member2.jpg', 'image/jpeg', 32600, false),
+  ('6a519b0a-4dcb-4351-b0cc-20e29573dd7d', 'slip01.jpg', 'slip', 'membersub', 'slip01.jpg', 'image/jpeg', 52953, false),
+  ('6a84d2c7-df0d-473f-8ab5-35c935540797', 'slip02.jpg', 'slip', 'memberexp', 'slip02.jpg', 'image/jpeg', 52402, false),
+  ('7e4e3405-ba52-4e97-9523-66606bc48b3e', 'slip03.jpg', 'slip', 'memberfake', 'slip03.jpg', 'image/jpeg', 53595, false),
+  ('ccfb51b8-4c91-4886-bbc1-ae75c48ef465', 'slip04.png', 'slip', 'memberwrong', 'slip04.png', 'image/png', 1706755, false);
 
 INSERT INTO files (kind, original_name, storage_key, mime_type, size_bytes, uploaded_by, uploaded_at, artwork_id, is_cover)
 SELECT f.kind, CASE WHEN f.kind = 'thumbnail' THEN 'thumbnail-' || f.file_name ELSE f.file_name END,
@@ -312,24 +277,24 @@ CROSS JOIN LATERAL (
 WHERE f.kind = 'slip';
 
 -- ส่วน 5: ดาวน์โหลด (= คลัง + ยอดดาวน์โหลด)
--- งานสมาชิกโหลดได้เฉพาะช่วงที่เป็นสมาชิก: bankkb ตั้งแต่ ~12 วันก่อน · stang ช่วง 76–46 วันก่อน · Artist โหลดได้ตลอด
+-- งานสมาชิกโหลดได้เฉพาะช่วงที่เป็นสมาชิก: membersub ตั้งแต่ ~12 วันก่อน · memberexp ช่วง 76–46 วันก่อน · Artist โหลดได้ตลอด
 -- แถวที่วันโหลดอยู่ก่อนวันลงงานถูกข้ามอัตโนมัติ
 INSERT INTO downloads (user_id, artwork_id, downloaded_at)
 SELECT u.user_id, m.artwork_id, now() - v.days_ago * interval '1 day'
 FROM (VALUES
-  ('bankkb',       'best/1st (free)', 80.2), ('bankkb', 'ping/1st (free)', 40.6), ('bankkb', 'ping/2nd (free)', 12.9),
-  ('bankkb',       'best/4th (paid)', 10.4), ('bankkb', 'cat/2nd (paid)',   9.1), ('bankkb', 'cat/3rd (paid)',   7.7),
-  ('bankkb',       'cat/1st (paid)',   5.2), ('bankkb', 'cat/5th (paid)',   3.6), ('bankkb', 'best/3rd (paid)',  2.3),
-  ('stang',        'best/2nd (free)', 80.5), ('stang',  'cat/2nd (paid)',  74.3), ('stang',  'ping/1st (free)', 70.1),
-  ('stang',        'best/3rd (paid)', 68.4), ('stang',  'cat/3rd (paid)',  60.2), ('stang',  'cat/1st (paid)',  50.8),
-  ('minviii',      'best/1st (free)', 55.3), ('minviii', 'best/2nd (free)', 50.6), ('minviii', 'ping/1st (free)', 30.2),
-  ('minviii',      'ping/2nd (free)', 14.1),
-  ('nooyimm',      'ping/1st (free)', 40.4), ('nooyimm', 'ping/2nd (free)', 13.5), ('nooyimm', 'best/2nd (free)', 7.2),
-  ('fuku',         'ping/2nd (free)',  8.3), ('fuku',    'best/1st (free)',  6.1), ('fuku',    'best/2nd (free)', 2.4),
-  ('tubfah',       'ping/2nd (free)',  3.2),
-  ('bestart',      'cat/2nd (paid)',  90.3), ('bestart', 'cat/4th (paid)',  20.5),
+  ('membersub',       'best/1st (free)', 80.2), ('membersub', 'ping/1st (free)', 40.6), ('membersub', 'ping/2nd (free)', 12.9),
+  ('membersub',       'best/4th (paid)', 10.4), ('membersub', 'cat/2nd (paid)',   9.1), ('membersub', 'cat/3rd (paid)',   7.7),
+  ('membersub',       'cat/1st (paid)',   5.2), ('membersub', 'cat/5th (paid)',   3.6), ('membersub', 'best/3rd (paid)',  2.3),
+  ('memberexp',        'best/2nd (free)', 80.5), ('memberexp',  'cat/2nd (paid)',  74.3), ('memberexp',  'ping/1st (free)', 70.1),
+  ('memberexp',        'best/3rd (paid)', 68.4), ('memberexp',  'cat/3rd (paid)',  60.2), ('memberexp',  'cat/1st (paid)',  50.8),
+  ('member1',      'best/1st (free)', 55.3), ('member1', 'best/2nd (free)', 50.6), ('member1', 'ping/1st (free)', 30.2),
+  ('member1',      'ping/2nd (free)', 14.1),
+  ('memberwrong',      'ping/1st (free)', 40.4), ('memberwrong', 'ping/2nd (free)', 13.5), ('memberwrong', 'best/2nd (free)', 7.2),
+  ('member2',         'ping/2nd (free)',  8.3), ('member2',    'best/1st (free)',  6.1), ('member2',    'best/2nd (free)', 2.4),
+  ('memberfake',       'ping/2nd (free)',  3.2),
+  ('gohiw',      'cat/2nd (paid)',  90.3), ('gohiw', 'cat/4th (paid)',  20.5),
   ('catsausage',   'best/3rd (paid)', 60.7), ('catsausage', 'best/4th (paid)', 20.1),
-  ('technicalart', 'best/1st (free)', 90.6), ('technicalart', 'cat/1st (paid)', 85.4)
+  ('technicalboy', 'best/1st (free)', 90.6), ('technicalboy', 'cat/1st (paid)', 85.4)
 ) AS v (username, demo_key, days_ago)
 JOIN users u ON u.username = v.username
 JOIN demo_map m ON m.demo_key = v.demo_key
@@ -339,14 +304,14 @@ WHERE now() - v.days_ago * interval '1 day' >= m.created_at;
 INSERT INTO artwork_likes (artwork_id, user_id, created_at)
 SELECT m.artwork_id, u.user_id, first_download.at + interval '40 minutes'
 FROM (VALUES
-  ('bankkb', 'cat/5th (paid)'), ('bankkb', 'cat/2nd (paid)'), ('bankkb', 'cat/3rd (paid)'), ('bankkb', 'best/4th (paid)'),
-  ('bankkb', 'ping/2nd (free)'), ('bankkb', 'best/1st (free)'),
-  ('stang', 'cat/2nd (paid)'), ('stang', 'best/3rd (paid)'), ('stang', 'ping/1st (free)'), ('stang', 'cat/3rd (paid)'),
-  ('minviii', 'best/1st (free)'), ('minviii', 'ping/1st (free)'), ('minviii', 'ping/2nd (free)'),
-  ('nooyimm', 'ping/1st (free)'), ('nooyimm', 'ping/2nd (free)'), ('nooyimm', 'best/2nd (free)'),
-  ('fuku', 'ping/2nd (free)'), ('fuku', 'best/1st (free)'),
-  ('tubfah', 'ping/2nd (free)'),
-  ('bestart', 'cat/2nd (paid)'), ('catsausage', 'best/4th (paid)'), ('technicalart', 'best/1st (free)'), ('technicalart', 'cat/1st (paid)')
+  ('membersub', 'cat/5th (paid)'), ('membersub', 'cat/2nd (paid)'), ('membersub', 'cat/3rd (paid)'), ('membersub', 'best/4th (paid)'),
+  ('membersub', 'ping/2nd (free)'), ('membersub', 'best/1st (free)'),
+  ('memberexp', 'cat/2nd (paid)'), ('memberexp', 'best/3rd (paid)'), ('memberexp', 'ping/1st (free)'), ('memberexp', 'cat/3rd (paid)'),
+  ('member1', 'best/1st (free)'), ('member1', 'ping/1st (free)'), ('member1', 'ping/2nd (free)'),
+  ('memberwrong', 'ping/1st (free)'), ('memberwrong', 'ping/2nd (free)'), ('memberwrong', 'best/2nd (free)'),
+  ('member2', 'ping/2nd (free)'), ('member2', 'best/1st (free)'),
+  ('memberfake', 'ping/2nd (free)'),
+  ('gohiw', 'cat/2nd (paid)'), ('catsausage', 'best/4th (paid)'), ('technicalboy', 'best/1st (free)'), ('technicalboy', 'cat/1st (paid)')
 ) AS v (username, demo_key)
 JOIN users u ON u.username = v.username
 JOIN demo_map m ON m.demo_key = v.demo_key
@@ -359,26 +324,26 @@ WHERE first_download.at IS NOT NULL;
 INSERT INTO comments (artwork_id, user_id, body, created_at)
 SELECT m.artwork_id, u.user_id, v.body, now() - v.days_ago * interval '1 day'
 FROM (VALUES
-  ('minviii',      'best/1st (free)', 'ติดตามผลงานนะคับบ เซฟ', 54.9),
-  ('bankkb',       'best/1st (free)', 'ภาพสวยมากครับ', 54.9),
-  ('bestart',      'best/1st (free)', 'เอาไปทำวอลเปเปอร์ได้เลยครับ', 54.9),
-  ('fuku',         'best/1st (free)', 'ขอบคุณค่ะ ขอเอาไปทำวอลเปเปอร์นะคะ', 5.9),
-  ('stang',        'best/2nd (free)', 'ชุดดำเท่มากกกก', 79.8),
-  ('nooyimm',      'best/2nd (free)', 'ผู้ชายในฝัน', 6.8),
-  ('bankkb',       'best/4th (paid)', 'คุ้มค่าสมาชิกแล้วงานนี้', 9.8),
-  ('technicalart', 'cat/1st (paid)',  'แสงฟ้าเรืองแสงทำยังไงครับ', 84.9),
+  ('member1',      'best/1st (free)', 'ติดตามผลงานนะคับบ เซฟ', 54.9),
+  ('membersub',       'best/1st (free)', 'ภาพสวยมากครับ', 54.9),
+  ('gohiw',      'best/1st (free)', 'เอาไปทำวอลเปเปอร์ได้เลยครับ', 54.9),
+  ('member2',         'best/1st (free)', 'ขอบคุณค่ะ ขอเอาไปทำวอลเปเปอร์นะคะ', 5.9),
+  ('memberexp',        'best/2nd (free)', 'ชุดดำเท่มากกกก', 79.8),
+  ('memberwrong',      'best/2nd (free)', 'ผู้ชายในฝัน', 6.8),
+  ('membersub',       'best/4th (paid)', 'คุ้มค่าสมาชิกแล้วงานนี้', 9.8),
+  ('technicalboy', 'cat/1st (paid)',  'แสงฟ้าเรืองแสงทำยังไงครับ', 84.9),
   ('catsausage',   'cat/1st (paid)',  'ใช้ rim light สีฟ้า แล้วเติม bloom ตอน post ครับ', 84.2),
-  ('bestart',      'cat/2nd (paid)',  'ฉากสวยเหมือนอยู่ในเกมจริง', 89.7),
-  ('bankkb',       'cat/2nd (paid)',  'โหลดครบ 10 ภาพ เอาไปทำ background ได้หมดเลย', 8.7),
-  ('stang',        'cat/3rd (paid)',  'สีชมพูน่ารักมาก', 59.6),
-  ('bestart',      'cat/4th (paid)',  'ชอบภาพที่ 2 สุด', 19.9),
-  ('bankkb',       'cat/5th (paid)',  'FH6 มาแล้ววว', 3.1),
-  ('tubfah',       'cat/5th (paid)',  'อยากได้ภาพนี้มาก รออนุมัติแล้วจะมาโหลด+++', 0.8),
-  ('minviii',      'ping/1st (free)', '555555 แมวใส่บรา', 29.7),
-  ('nooyimm',      'ping/1st (free)', '7 วัน 7 สีเลย 555555555555555555', 39.8),
-  ('technicalart', 'ping/1st (free)', 'เอาไปใช้ได้ฟรีเลยครับ ไม่ต้องให้เครดิต', 39.2),
-  ('fuku',         'ping/2nd (free)', 'สติกเกอร์น่ารักมาก ขอเอาไปใช้ใน LINE นะคะ', 7.9),
-  ('tubfah',       'ping/2nd (free)', 'ตัวที่ 3 เหมือนผมตอนตื่นสาย 555', 2.9)
+  ('gohiw',      'cat/2nd (paid)',  'ฉากสวยเหมือนอยู่ในเกมจริง', 89.7),
+  ('membersub',       'cat/2nd (paid)',  'โหลดครบ 10 ภาพ เอาไปทำ background ได้หมดเลย', 8.7),
+  ('memberexp',        'cat/3rd (paid)',  'สีชมพูน่ารักมาก', 59.6),
+  ('gohiw',      'cat/4th (paid)',  'ชอบภาพที่ 2 สุด', 19.9),
+  ('membersub',       'cat/5th (paid)',  'FH6 มาแล้ววว', 3.1),
+  ('memberfake',       'cat/5th (paid)',  'อยากได้ภาพนี้มาก รออนุมัติแล้วจะมาโหลด+++', 0.8),
+  ('member1',      'ping/1st (free)', '555555 แมวใส่บรา', 29.7),
+  ('memberwrong',      'ping/1st (free)', '7 วัน 7 สีเลย 555555555555555555', 39.8),
+  ('technicalboy', 'ping/1st (free)', 'เอาไปใช้ได้ฟรีเลยครับ ไม่ต้องให้เครดิต', 39.2),
+  ('member2',         'ping/2nd (free)', 'สติกเกอร์น่ารักมาก ขอเอาไปใช้ใน LINE นะคะ', 7.9),
+  ('memberfake',       'ping/2nd (free)', 'ตัวที่ 3 เหมือนผมตอนตื่นสาย 555', 2.9)
 ) AS v (username, demo_key, body, days_ago)
 JOIN users u ON u.username = v.username
 JOIN demo_map m ON m.demo_key = v.demo_key
@@ -443,7 +408,7 @@ SELECT s.reviewed_at, 'Information', 'Subscription', CASE s.status WHEN 'approve
          ELSE 'ปฏิเสธคำขอ #' || s.subscription_id || ' ของ ' || u.email || ': ' || s.review_note
        END, admin_ip.ip
 FROM subscriptions s JOIN users u ON u.user_id = s.user_id
-CROSS JOIN (SELECT user_id, email FROM users WHERE username = 'administrator') AS admin
+CROSS JOIN (SELECT user_id, email FROM users WHERE username = 'admin') AS admin
 JOIN demo_ip admin_ip ON admin_ip.user_id = admin.user_id
 WHERE s.status <> 'pending'
 UNION ALL
@@ -453,9 +418,9 @@ SELECT now() - v.days_ago * interval '1 day', 'Warning', v.source, v.category, u
        v.resource_type, NULL, v.result, v.description, v.ip
 FROM (VALUES
   (NULL,      33.4, 'Access', 'Denied', 'artwork',      'denied',  'GET /app/artworks/download ถูกปฏิเสธ (401) ต้อง login', '10.0.9.80'),
-  ('minviii', 31.2, 'Access', 'Denied', 'artwork',      'denied',  'GET /app/artworks/download ถูกปฏิเสธ (403) ต้องการ file.download', NULL),
-  ('fuku',     9.6, 'Auth',   'Login',  'user',         'failure', 'เข้าสู่ระบบไม่สำเร็จ: รหัสผ่านไม่ถูกต้อง', NULL),
-  ('nooyimm',  6.3, 'File',   'Upload', 'subscription', 'success', 'อัปโหลดสลิป "slip04.png" (image/png)', NULL)
+  ('member1', 31.2, 'Access', 'Denied', 'artwork',      'denied',  'GET /app/artworks/download ถูกปฏิเสธ (403) ต้องการ file.download', NULL),
+  ('member2',     9.6, 'Auth',   'Login',  'user',         'failure', 'เข้าสู่ระบบไม่สำเร็จ: รหัสผ่านไม่ถูกต้อง', NULL),
+  ('memberwrong',  6.3, 'File',   'Upload', 'subscription', 'success', 'อัปโหลดสลิป "slip04.png" (image/png)', NULL)
 ) AS v (username, days_ago, source, category, resource_type, result, description, ip)
 LEFT JOIN users u ON u.username = v.username
 LEFT JOIN roles r ON r.role_id = u.role_id;
