@@ -1,0 +1,29 @@
+<%- include('../partials/head', { title: 'Sign up' }) %>
+<%- include('../partials/siteHeader') %>
+<main class="container">
+  <h1>Sign up</h1>
+  <%- include('../partials/flash') %>
+  <form method="post" action="/register" class="form-narrow" novalidate>
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="email" required maxlength="254" value="<%= values.email || '' %>">
+    </div>
+    <div class="field">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" autocomplete="username" autocapitalize="none" required minlength="3" maxlength="20" pattern="[a-z0-9_]{3,20}" value="<%= values.username || '' %>">
+    </div>
+    <div class="field">
+      <label for="displayName">Display name</label>
+      <input id="displayName" name="displayName" type="text" required minlength="2" maxlength="40" value="<%= values.displayName || '' %>">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="new-password" required>
+    </div>
+    <div class="actions">
+      <button type="submit">Sign up</button>
+      <a href="/login">Log in</a>
+    </div>
+  </form>
+</main>
+<%- include('../partials/foot') %>

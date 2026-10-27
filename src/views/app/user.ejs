@@ -1,0 +1,41 @@
+<%- include('../partials/head', { title: profile.displayName }) %>
+<%- include('../partials/siteHeader') %>
+<% const isSelf = me.actor.userId === profile.userId; %>
+<main class="container">
+  <%- include('../partials/flash') %>
+  <section class="profile-head">
+    <img class="avatar avatar-xl" src="/app/users/<%= profile.userId %>/avatar" alt="">
+    <div>
+      <h1><%= profile.displayName %></h1>
+      <p class="muted">@<%= profile.username %> · Joined <%= new Date(profile.createdAt).toLocaleDateString('en-GB', { year: 'numeric', month: 'long' }) %></p>
+      <p class="stat-row">
+        <% if (canUpload) { %>
+          <span><strong><%= profile.artworkCount %></strong> artworks</span><span>♥ <strong><%= profile.likeCount %></strong> likes</span>
+        <% } else { %>
+          <span class="badge"><%= profile.roleName %></span>
+        <% } %>
+      </p>
+      <% if (profile.bio) { %><p class="prewrap"><%= profile.bio %></p><% } %>
+      <% if (isSelf) { %>
+        <p class="actions">
+          <% if (me.can('profile.read')) { %><a class="button secondary" href="/app/profile/edit">Edit profile</a><% } %>
+          <% if (me.can('subscription.read')) { %><a class="button secondary" href="/app/subscription">Subscription</a><% } %>
+          <% if (canUpload && me.can('artwork.create')) { %><a class="button" href="/app/artworks/new">+ New artwork</a><% } %>
+        </p>
+      <% } %>
+    </div>
+  </section>
+
+  <section id="works" class="home-section">
+    <div class="section-head"><h2><%= canUpload ? 'Artworks' : 'Liked' %></h2></div>
+    <% if (result.items.length === 0) { %>
+      <p class="empty"><%= canUpload ? 'No artworks yet' : 'No liked artworks yet' %></p>
+    <% } else { %>
+      <div class="grid">
+        <% for (const artwork of result.items) { %><%- include('../partials/artworkCard', { artwork }) %><% } %>
+      </div>
+    <% } %>
+    <%- include('../partials/pager', { pagination: result }) %>
+  </section>
+</main>
+<%- include('../partials/foot') %>

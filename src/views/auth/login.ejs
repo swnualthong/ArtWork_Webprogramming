@@ -1,0 +1,23 @@
+<%- include('../partials/head', { title: 'Log in' }) %>
+<%- include('../partials/siteHeader') %>
+<main class="container">
+  <h1>Log in</h1>
+  <% if (locals.notice) { %><p class="message success" role="status"><%= notice %></p><% } %>
+  <%- include('../partials/flash') %>
+  <form method="post" action="/login" class="form-narrow" novalidate>
+    <input type="hidden" name="next" value="<%= locals.next || '' %>">
+    <div class="field">
+      <label for="email">Email or username</label>
+      <input id="email" name="email" type="text" autocomplete="username" autocapitalize="none" required maxlength="254" value="<%= locals.email || '' %>">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+    </div>
+    <div class="actions">
+      <button type="submit">Log in</button>
+      <a href="/register">Sign up</a>
+    </div>
+  </form>
+</main>
+<%- include('../partials/foot') %>

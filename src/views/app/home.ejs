@@ -1,0 +1,64 @@
+<%- include('../partials/head', { title: 'Home' }) %>
+<%- include('../partials/siteHeader') %>
+<main class="container">
+  <%- include('../partials/flash') %>
+  <% const canCreate = me.can('artwork.create'); %>
+
+  <section class="hero">
+    <div class="hero-text">
+      <h1>Artwork Gallery</h1>
+      <div class="actions">
+        <a class="button" href="/app/search">Search</a>
+        <% if (canCreate) { %>
+          <a class="button secondary" href="/app/artworks/new">+ New artwork</a>
+        <% } else if (me.actor.isGuest) { %>
+          <a class="button secondary" href="/register">Sign up</a>
+        <% } %>
+      </div>
+    </div>
+    <% if (featured) { %>
+      <div class="hero-feature">
+        <p class="section-label">Featured</p>
+        <%- include('../partials/artworkCard', { artwork: featured, large: true }) %>
+      </div>
+    <% } %>
+  </section>
+
+  <% if (trending.length > 0) { %>
+    <section class="home-section">
+      <div class="section-head"><h2>Popular</h2></div>
+      <div class="grid grid-4">
+        <% for (const artwork of trending) { %><%- include('../partials/artworkCard', { artwork }) %><% } %>
+      </div>
+    </section>
+  <% } %>
+
+  <% if (artists.length > 0) { %>
+    <section class="home-section">
+      <div class="section-head"><h2>Artists</h2></div>
+      <ul class="artist-strip">
+        <% for (const artist of artists) { %>
+          <li>
+            <a href="/app/users/<%= artist.userId %>">
+              <img class="avatar avatar-lg" src="/app/users/<%= artist.userId %>/avatar" alt="" loading="lazy">
+              <span class="artist-name"><%= artist.displayName %></span>
+              <span class="muted small"><%= artist.artworkCount %> artworks</span>
+            </a>
+          </li>
+        <% } %>
+      </ul>
+    </section>
+  <% } %>
+
+  <section class="home-section">
+    <div class="section-head"><h2>Latest</h2></div>
+    <% if (latest.length === 0) { %>
+      <p class="empty">No artworks yet</p>
+    <% } else { %>
+      <div class="grid">
+        <% for (const artwork of latest) { %><%- include('../partials/artworkCard', { artwork }) %><% } %>
+      </div>
+    <% } %>
+  </section>
+</main>
+<%- include('../partials/foot') %>

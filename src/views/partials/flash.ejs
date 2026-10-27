@@ -1,0 +1,6 @@
+<% if (locals.flash) { %>
+  <p class="message <%= flash.type %>" role="status"><%= flash.text %></p>
+<% } %>
+<% if (locals.errorMessage) { %>
+  <p class="message error" role="alert"><%= errorMessage %></p>
+<% } %>

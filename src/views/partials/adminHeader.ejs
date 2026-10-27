@@ -1,0 +1,24 @@
+<%# เมนูซ่อนตามสิทธิ์ (Server ตรวจซ้ำทุก route) ผู้ใช้/ACL เห็นเฉพาะ Admin ต้องส่ง activeTab มาให้ %>
+<header class="site-header admin-header">
+  <div class="bar">
+    <span class="brand">Artwork Admin</span>
+    <nav class="tabs nav" aria-label="Admin menu">
+      <% const adminTabs = [
+        ['users', '/admin/users', 'Users', me.actor.isSuperUser],
+        ['acl', '/admin/acl', 'ACL', me.actor.isSuperUser],
+        ['subscriptions', '/admin/subscriptions', 'Subscriptions', me.can('subscription.review')],
+        ['logs', '/admin/logs', 'Logs', me.can('log.read')],
+      ]; %>
+      <% for (const [tabKey, href, label, allowed] of adminTabs) { %>
+        <% if (allowed) { %><a href="<%= href %>"<% if (locals.activeTab === tabKey) { %> aria-current="page"<% } %>><%= label %></a><% } %>
+      <% } %>
+    </nav>
+    <div class="account">
+      <span class="small muted">@<%= me.actor.username %> · <%= me.actor.roleName %></span>
+      <a href="/app/home">← Back to site</a>
+      <form method="post" action="/logout" class="inline">
+        <button type="submit" class="secondary">Log out</button>
+      </form>
+    </div>
+  </div>
+</header>

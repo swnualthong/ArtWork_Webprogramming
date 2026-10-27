@@ -1,0 +1,9 @@
+<%- include('../partials/head', { title: `${status} ${title}` }) %>
+<%- include('../partials/siteHeader') %>
+<main class="container error-page">
+  <p class="error-status"><%= status %></p>
+  <h1><%= title %></h1>
+  <p><%= message %></p>
+  <p><a href="/app/home">Back to home</a></p>
+</main>
+<%- include('../partials/foot') %>

@@ -1,0 +1,76 @@
+<%- include('../partials/head', { title: 'Logs · Admin' }) %>
+<%- include('../partials/adminHeader') %>
+<main class="container">
+  <h1>Logs</h1>
+  <%- include('../partials/flash') %>
+  <form method="get" action="/admin/logs" class="inline-form filters">
+    <div class="field"><label for="from">From</label><input id="from" name="from" type="datetime-local" value="<%= rawFilters.from %>"></div>
+    <div class="field"><label for="to">To</label><input id="to" name="to" type="datetime-local" value="<%= rawFilters.to %>"></div>
+    <div class="field field-narrow">
+      <label for="level">Level</label>
+      <select id="level" name="level">
+        <option value="">All</option>
+        <% for (const level of ['Information', 'Warning', 'Error']) { %>
+          <option<% if (rawFilters.level === level) { %> selected<% } %>><%= level %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="field field-narrow">
+      <label for="source">Source</label>
+      <select id="source" name="source">
+        <option value="">All</option>
+        <% for (const source of Object.keys(logCatalog)) { %>
+          <option<% if (rawFilters.source === source) { %> selected<% } %>><%= source %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="field field-narrow">
+      <label for="category">Category</label>
+      <select id="category" name="category">
+        <option value="">All</option>
+        <% for (const category of categories) { %>
+          <option<% if (rawFilters.category === category) { %> selected<% } %>><%= category %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="field"><label for="email">User email</label><input id="email" name="email" type="search" maxlength="254" value="<%= rawFilters.email %>"></div>
+    <div class="field field-narrow">
+      <label for="pageSize">Per page</label>
+      <select id="pageSize" name="pageSize" data-auto-submit>
+        <% for (const size of logPageSizes) { %>
+          <option<% if (result.pageSize === size) { %> selected<% } %>><%= size %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="actions">
+      <button type="submit">Search</button>
+      <a class="button secondary" href="/admin/logs">Clear</a>
+    </div>
+  </form>
+  <p class="muted small"><%= result.total %> entries</p>
+
+  <%# หน้าตาแบบ Event Viewer กดแถวเพื่อดูรายละเอียด %>
+  <div class="log-list">
+    <div class="log-row log-head" aria-hidden="true"><span>Level</span><span>Date and Time</span><span>Source</span><span>Category</span></div>
+    <% if (result.items.length === 0) { %><p class="empty">No logs found</p><% } %>
+    <% for (const log of result.items) { %>
+      <details class="log-entry">
+        <summary class="log-row">
+          <span><span class="badge <%= { Information: '', Warning: 'warning', Error: 'danger' }[log.level] %>"><%= log.level %></span></span>
+          <span><%= formatDateTime(log.loggedAt) %></span>
+          <span><%= log.source %></span>
+          <span><%= log.category %></span>
+        </summary>
+        <dl class="log-detail">
+          <dt>Description</dt><dd><%= log.description %></dd>
+          <dt>Actor</dt><dd><%= log.actorLabel || '-' %></dd>
+          <dt>Resource</dt><dd><%= log.resourceType ? `${log.resourceType} #${log.resourceId || '-'}` : '-' %></dd>
+          <dt>Result</dt><dd><%= log.result %></dd>
+          <dt>IP</dt><dd><%= log.ipAddress || '-' %></dd>
+        </dl>
+      </details>
+    <% } %>
+  </div>
+  <%- include('../partials/pager', { pagination: result }) %>
+</main>
+<%- include('../partials/foot') %>

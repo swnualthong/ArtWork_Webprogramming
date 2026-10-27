@@ -1,0 +1,56 @@
+# Artwork ทั้งชุดในคำสั่งเดียว: docker compose up -d --build → http://localhost:3000
+# เริ่มครั้งแรกฐานว่างจะถูกตั้งต้นเอง (scripts/db-init.mjs):
+#   มีโฟลเดอร์ SeedData ข้างโปรเจกต์ = ข้อมูลสาธิตครบ · ไม่มี = schema พื้นฐาน + Admin จาก ADMIN_*
+# ล้างกลับเป็นข้อมูลสาธิต (ต้องมี SeedData): docker compose exec app npm run demo:reset
+# แก้โค้ดแล้วอัปเดต container: docker compose up -d --build
+#
+# ค่าเริ่มต้นเป็นของสำหรับพัฒนา/สาธิตเท่านั้น เปลี่ยนได้ด้วยตัวแปรใน .env หรือ environment:
+#   APP_PORT (3000) · DB_PASSWORD · SESSION_SECRET
+#   ADMIN_USERNAME / ADMIN_EMAIL / ADMIN_PASSWORD (Admin คนแรกเมื่อไม่มี SeedData)
+#   SEED_DATA_PATH (../SeedData = โฟลเดอร์รูปสาธิตข้างโปรเจกต์)
+#
+# ฐานข้อมูลไม่เปิดพอร์ตออกนอก Docker (กันชนกับ PostgreSQL ที่มีในเครื่องอยู่แล้ว)
+#   เปิด psql: docker compose exec db psql -U artwork artwork
+name: artwork
+
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: artwork
+      POSTGRES_USER: artwork
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-artwork-dev-only}
+    volumes:
+      # PostgreSQL 18 เก็บข้อมูลใต้ /var/lib/postgresql/18/docker จึง mount ที่ /var/lib/postgresql
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U artwork -d artwork"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgres://artwork:${DB_PASSWORD:-artwork-dev-only}@db:5432/artwork
+      SESSION_SECRET: ${SESSION_SECRET:-artwork-dev-only-session-secret}
+      UPLOAD_DIR: /app/uploads
+      SEED_DATA_DIR: /SeedData
+      SUBSCRIPTION_PRICE_THB: ${SUBSCRIPTION_PRICE_THB:-499}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin-dev-only}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - uploads:/app/uploads
+      - ${SEED_DATA_PATH:-../SeedData}:/SeedData:ro
+
+volumes:
+  db-data:
+  uploads:

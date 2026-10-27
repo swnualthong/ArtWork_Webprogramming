@@ -1,0 +1,116 @@
+<%- include('../partials/head', { title: artwork.title }) %>
+<%- include('../partials/siteHeader') %>
+<% const isMembersOnly = artwork.visibility === 'subscriber'; %>
+<% const isLocked = isMembersOnly && !canDownload; %>
+<main class="container">
+  <%- include('../partials/flash') %>
+  <article class="detail">
+    <div class="carousel<%= isLocked ? ' locked' : '' %>" data-carousel<% if (isLocked) { %> data-protected<% } %>>
+      <div class="carousel-track" data-carousel-track>
+        <% artwork.images.forEach((image, index) => { %>
+          <figure class="slide">
+            <img src="/api/artworks/<%= artwork.artworkId %>/images/<%= image.fileId %>" alt="<%= artwork.title %> (<%= index + 1 %>/<%= artwork.images.length %>)" draggable="false"<% if (index > 0) { %> loading="lazy"<% } %> data-fallback>
+          </figure>
+        <% }) %>
+      </div>
+      <% if (artwork.images.length > 1) { %>
+        <button type="button" class="carousel-nav prev" data-carousel-prev aria-label="Previous image">‹</button>
+        <button type="button" class="carousel-nav next" data-carousel-next aria-label="Next image">›</button>
+        <span class="carousel-count" data-carousel-count aria-live="polite">1 / <%= artwork.images.length %></span>
+      <% } %>
+      <% if (isLocked) { %><span class="lock-note">Members only</span><% } %>
+    </div>
+    <div>
+      <span class="ribbon static <%= isMembersOnly ? 'members' : 'free' %>"><%= isMembersOnly ? 'Members' : 'Free' %></span>
+      <h1><%= artwork.title %></h1>
+      <p class="byline">
+        <img class="avatar" src="/app/users/<%= artwork.artistId %>/avatar" alt="">
+        <span>by <a href="/app/users/<%= artwork.artistId %>"><%= artwork.artistName %></a></span>
+      </p>
+      <p class="stat-row">
+        <span>♥ <strong><%= artwork.likeCount %></strong> likes</span>
+        <span>↓ <strong><%= artwork.downloadCount %></strong> downloads</span>
+      </p>
+      <% if (artwork.description) { %><p class="prewrap"><%= artwork.description %></p><% } %>
+      <% if (artwork.tags.length > 0) { %>
+        <ul class="tag-list" aria-label="Tags">
+          <% for (const tag of artwork.tags) { %>
+            <li><a href="/app/search?q=<%= encodeURIComponent(tag) %>&type=tag">#<%= tag %></a></li>
+          <% } %>
+        </ul>
+      <% } %>
+
+      <div class="actions">
+        <% if (me.actor.isGuest) { %>
+          <a class="button" href="/login?next=<%= encodeURIComponent(currentPath) %>"><%= isMembersOnly ? 'Log in' : 'Log in to download' %></a>
+        <% } else if (canDownload) { %>
+          <a class="button" href="/app/artworks/<%= artwork.artworkId %>/download"><%= artwork.images.length > 1 ? 'Download all (.zip)' : 'Download' %></a>
+        <% } else { %>
+          <a class="button secondary" href="/app/subscription">Subscribe to download</a>
+        <% } %>
+        <% if (canLike && hasDownloaded) { %>
+          <form method="post" action="/app/artworks/<%= artwork.artworkId %>/like" class="inline">
+            <button type="submit" class="<%= likedByMe ? 'liked' : 'secondary' %>" aria-pressed="<%= likedByMe %>"><%= likedByMe ? '♥ Liked' : '♡ Like' %></button>
+          </form>
+        <% } else if (canLike) { %>
+          <button type="button" class="secondary" disabled title="ต้องดาวน์โหลดก่อน">♡ Like</button>
+        <% } %>
+      </div>
+
+      <h2>Files (<%= artwork.images.length %> · <%= formatBytes(artwork.totalBytes) %>)</h2>
+      <ul class="file-list">
+        <% for (const image of artwork.images) { %>
+          <li>
+            <%= image.originalName %>
+            <span class="muted small"><%= image.mimeType.replace('image/', '') %> · <%= formatBytes(image.sizeBytes) %><%= image.isCover ? ' · cover' : '' %></span>
+          </li>
+        <% } %>
+      </ul>
+
+      <% if (canEdit || canDelete) { %>
+        <div class="actions section">
+          <% if (canEdit) { %><a class="button secondary" href="/app/artworks/<%= artwork.artworkId %>/edit">Edit</a><% } %>
+          <% if (canDelete) { %>
+            <form method="post" action="/app/artworks/<%= artwork.artworkId %>/delete" class="inline" data-confirm="Delete <%= artwork.title %>?">
+              <button type="submit" class="danger">Delete</button>
+            </form>
+          <% } %>
+        </div>
+      <% } %>
+    </div>
+  </article>
+
+  <section id="comments" class="comments">
+    <h2>Comments (<%= comments.length %>)</h2>
+    <% if (comments.length === 0) { %><p class="muted">No comments yet</p><% } %>
+    <ul class="comment-list">
+      <% for (const comment of comments) { %>
+        <li class="comment">
+          <a href="/app/users/<%= comment.userId %>"><img class="avatar" src="/app/users/<%= comment.userId %>/avatar" alt="" loading="lazy"></a>
+          <div class="comment-body">
+            <p>
+              <a href="/app/users/<%= comment.userId %>"><strong><%= comment.authorName %></strong></a>
+              <span class="muted small"><%= formatDateTime(comment.createdAt) %></span>
+            </p>
+            <p class="prewrap"><%= comment.body %></p>
+          </div>
+          <% if ((canDeleteOwnComment && comment.userId === me.actor.userId) || canDeleteAnyComment) { %>
+            <form method="post" action="/app/comments/<%= comment.commentId %>/delete" class="inline" data-confirm="Delete this comment?">
+              <button type="submit" class="link">Delete</button>
+            </form>
+          <% } %>
+        </li>
+      <% } %>
+    </ul>
+    <% if (canComment) { %>
+      <form method="post" action="/app/artworks/<%= artwork.artworkId %>/comments" class="comment-form" novalidate>
+        <label for="commentBody">Comment</label>
+        <textarea id="commentBody" name="body" maxlength="500" required></textarea>
+        <button type="submit">Post</button>
+      </form>
+    <% } else if (me.actor.isGuest) { %>
+      <p class="muted"><a href="/login?next=<%= encodeURIComponent(currentPath) %>">Log in</a> to comment</p>
+    <% } %>
+  </section>
+</main>
+<%- include('../partials/foot') %>

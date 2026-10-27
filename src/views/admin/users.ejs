@@ -1,0 +1,110 @@
+<%- include('../partials/head', { title: 'Users · Admin' }) %>
+<%- include('../partials/adminHeader') %>
+<main class="container">
+  <%- include('../partials/flash') %>
+  <h1>Users</h1>
+
+  <form method="get" action="/admin/users" class="inline-form">
+    <div class="field field-narrow">
+      <label for="filterRole">Role</label>
+      <select id="filterRole" name="roleId">
+        <option value="">All roles</option>
+        <% for (const role of assignableRoles) { %>
+          <option value="<%= role.roleId %>"<% if (filters.roleId === role.roleId) { %> selected<% } %>><%= role.name %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="field">
+      <label for="filterUser">Username or email</label>
+      <input id="filterUser" name="user" type="search" maxlength="254" value="<%= filters.user %>">
+    </div>
+    <button type="submit" class="secondary">Search</button>
+  </form>
+
+  <details class="section">
+    <summary>+ Add user</summary>
+    <form method="post" action="/admin/users" class="inline-form" novalidate>
+      <div class="field">
+        <label for="newUsername">Username</label>
+        <input id="newUsername" name="username" type="text" required pattern="[a-z0-9_]{3,20}" maxlength="20" autocapitalize="none">
+      </div>
+      <div class="field">
+        <label for="newEmail">Email</label>
+        <input id="newEmail" name="email" type="email" required maxlength="254">
+      </div>
+      <div class="field">
+        <label for="newDisplayName">Display name</label>
+        <input id="newDisplayName" name="displayName" type="text" required minlength="2" maxlength="40">
+      </div>
+      <div class="field">
+        <label for="newUserPassword">Password</label>
+        <input id="newUserPassword" name="password" type="password" required autocomplete="new-password">
+      </div>
+      <div class="field field-narrow">
+        <label for="newUserRole">Role</label>
+        <select id="newUserRole" name="roleId" required>
+          <% for (const role of assignableRoles) { %><option value="<%= role.roleId %>"><%= role.name %></option><% } %>
+        </select>
+      </div>
+      <button type="submit">Add</button>
+    </form>
+  </details>
+
+  <div class="table-wrap section"><table>
+    <thead>
+      <tr>
+        <th scope="col">ID</th>
+        <th scope="col">Username</th>
+        <th scope="col">Email</th>
+        <th scope="col">Role</th>
+        <th scope="col">Status</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (users.length === 0) { %><tr><td colspan="6" class="muted">No users found</td></tr><% } %>
+      <% for (const user of users) { %>
+        <tr>
+          <td><%= user.userId %></td>
+          <td><a href="/app/users/<%= user.userId %>">@<%= user.username %></a></td>
+          <td><%= user.email %></td>
+          <td><%= user.roleName %></td>
+          <td><%= user.isActive ? 'Active' : 'Suspended' %></td>
+          <td>
+            <details>
+              <summary class="small">Edit</summary>
+              <form method="post" action="/admin/users/<%= user.userId %>" class="inline-form">
+                <div class="field field-narrow">
+                  <label for="role<%= user.userId %>">Role</label>
+                  <select id="role<%= user.userId %>" name="roleId">
+                    <% for (const role of assignableRoles) { %>
+                      <option value="<%= role.roleId %>"<% if (role.roleId === user.roleId) { %> selected<% } %>><%= role.name %></option>
+                    <% } %>
+                  </select>
+                </div>
+                <button type="submit">Change role</button>
+              </form>
+              <form method="post" action="/admin/users/<%= user.userId %>/password" class="inline-form" novalidate>
+                <div class="field field-narrow">
+                  <label for="newPassword<%= user.userId %>">New password</label>
+                  <input id="newPassword<%= user.userId %>" name="newPassword" type="password" autocomplete="new-password" required>
+                </div>
+                <button type="submit" class="secondary">Set password</button>
+              </form>
+              <div class="actions">
+                <form method="post" action="/admin/users/<%= user.userId %>" class="inline">
+                  <input type="hidden" name="isActive" value="<%= user.isActive ? 'false' : 'true' %>">
+                  <button type="submit" class="link small"><%= user.isActive ? 'Suspend' : 'Activate' %></button>
+                </form>
+                <form method="post" action="/admin/users/<%= user.userId %>/delete" class="inline" data-confirm="Delete @<%= user.username %>?">
+                  <button type="submit" class="link small">Delete</button>
+                </form>
+              </div>
+            </details>
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table></div>
+</main>
+<%- include('../partials/foot') %>

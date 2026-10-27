@@ -1,0 +1,79 @@
+<% const isEdit = Boolean(artwork); %>
+<% const visibility = isEdit ? artwork.visibility : 'subscriber'; %>
+<% const hasChosenCover = isEdit && artwork.images.some((image) => image.isCover); %>
+<%- include('../partials/head', { title: isEdit ? `Edit ${artwork.title}` : 'New artwork' }) %>
+<%- include('../partials/siteHeader') %>
+<main class="container">
+  <h1><%= isEdit ? `Edit: ${artwork.title}` : 'New artwork' %></h1>
+  <%- include('../partials/flash') %>
+  <%# multipart: ขนาดและชนิดไฟล์ตรวจที่ Server %>
+  <form method="post" action="<%= isEdit ? `/app/artworks/${artwork.artworkId}/edit` : '/app/artworks' %>" enctype="multipart/form-data" class="form-narrow" novalidate>
+    <div class="field">
+      <label for="title">Title</label>
+      <input id="title" name="title" type="text" required maxlength="100" value="<%= isEdit ? artwork.title : '' %>">
+    </div>
+    <div class="field">
+      <label for="description">Description</label>
+      <textarea id="description" name="description" maxlength="2000"><%= isEdit ? artwork.description : '' %></textarea>
+    </div>
+    <fieldset>
+      <legend>Visibility</legend>
+      <label class="checkbox"><input type="radio" name="visibility" value="free"<% if (visibility === 'free') { %> checked<% } %>> Free</label>
+      <label class="checkbox"><input type="radio" name="visibility" value="subscriber"<% if (visibility === 'subscriber') { %> checked<% } %>> Members only</label>
+    </fieldset>
+    <div class="field">
+      <label for="tags">Tags (space-separated)</label>
+      <input
+        id="tags"
+        name="tags"
+        type="text"
+        autocomplete="off"
+        value="<%= isEdit ? artwork.tags.join(' ') : '' %>"
+        data-tag-input
+        data-tag-source="<%= JSON.stringify(tagSuggestions.map((tag) => tag.name)) %>">
+      <ul class="tag-list" aria-label="Suggested tags" data-tag-suggestions>
+        <% for (const tag of tagSuggestions.slice(0, 5)) { %>
+          <li><button type="button" class="tag-chip" data-tag-suggestion="<%= tag.name %>">#<%= tag.name %></button></li>
+        <% } %>
+      </ul>
+    </div>
+    <div class="field">
+      <label for="images"><%= isEdit ? 'Add images' : 'Images' %></label>
+      <input
+        id="images"
+        name="images"
+        type="file"
+        multiple
+        accept=".jpg,.jpeg,.png,.gif,.webp"
+        <% if (!isEdit) { %>required<% } %>
+        data-image-input
+        data-max-files="<%= artworkFileLimits.maxFiles %>"
+        data-max-bytes="<%= artworkFileLimits.maxTotalBytes %>"
+        data-existing-count="<%= isEdit ? artwork.images.length : 0 %>"
+        data-existing-bytes="<%= isEdit ? artwork.totalBytes : 0 %>">
+      <p class="hint">jpg, png, gif, webp · max <%= artworkFileLimits.maxFiles %> files, <%= formatBytes(artworkFileLimits.maxTotalBytes) %></p>
+    </div>
+    <fieldset class="cover-picker">
+      <legend>Cover</legend>
+      <label class="checkbox"><input type="radio" name="cover" value=""<% if (!hasChosenCover) { %> checked<% } %>> Auto (first by file name)</label>
+      <% if (isEdit) { %>
+        <% for (const image of artwork.images) { %>
+          <div class="cover-option">
+            <label class="checkbox">
+              <input type="radio" name="cover" value="f<%= image.fileId %>"<% if (image.isCover) { %> checked<% } %>>
+              <img src="/api/artworks/<%= artwork.artworkId %>/images/<%= image.fileId %>" alt="" loading="lazy">
+              <span><%= image.originalName %> <span class="muted small"><%= formatBytes(image.sizeBytes) %></span></span>
+            </label>
+            <label class="checkbox small"><input type="checkbox" name="removeFiles" value="<%= image.fileId %>"> Remove</label>
+          </div>
+        <% } %>
+      <% } %>
+      <div data-new-cover-options></div>
+    </fieldset>
+    <div class="actions">
+      <button type="submit"><%= isEdit ? 'Save' : 'Create' %></button>
+      <a href="<%= isEdit ? `/app/artworks/${artwork.artworkId}` : '/app/profile#works' %>">Cancel</a>
+    </div>
+  </form>
+</main>
+<%- include('../partials/foot') %>

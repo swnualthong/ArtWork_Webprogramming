@@ -1,0 +1,73 @@
+<%- include('../partials/head', { title: 'Subscriptions · Admin' }) %>
+<%- include('../partials/adminHeader') %>
+<% const statusLabels = { pending: 'Pending', approved: 'Approved', rejected: 'Rejected' }; %>
+<% const statusBadges = { pending: 'warning', approved: 'success', rejected: 'danger' }; %>
+<main class="container">
+  <h1>Subscriptions</h1>
+  <%- include('../partials/flash') %>
+  <form method="get" action="/admin/subscriptions" class="inline-form">
+    <div class="field field-narrow">
+      <label for="status">Status</label>
+      <select id="status" name="status">
+        <% for (const [value, label] of [['pending', 'Pending'], ['approved', 'Approved'], ['rejected', 'Rejected'], ['all', 'All']]) { %>
+          <option value="<%= value %>"<% if (status === value) { %> selected<% } %>><%= label %></option>
+        <% } %>
+      </select>
+    </div>
+    <button type="submit" class="secondary">Filter</button>
+  </form>
+
+  <div class="table-wrap"><table>
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">User</th>
+        <th scope="col">Submitted</th>
+        <th scope="col">Status</th>
+        <th scope="col">Slip</th>
+        <th scope="col">Review</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (subscriptions.length === 0) { %><tr><td colspan="6" class="muted">No requests</td></tr><% } %>
+      <% for (const subscription of subscriptions) { %>
+        <tr>
+          <td>#<%= subscription.subscriptionId %></td>
+          <td><%= subscription.email %><br><span class="small muted"><%= subscription.displayName %></span></td>
+          <td><%= formatDateTime(subscription.requestedAt) %></td>
+          <td><span class="badge <%= statusBadges[subscription.status] %>"><%= statusLabels[subscription.status] %></span></td>
+          <td>
+            <% if (subscription.slipFileId) { %>
+              <a href="/admin/subscriptions/<%= subscription.subscriptionId %>/slip" target="_blank" rel="noopener">View</a>
+            <% } else { %>-<% } %>
+          </td>
+          <td>
+            <% if (subscription.status === 'pending' && !me.can('subscription.approve')) { %>
+              <span class="muted small">View only</span>
+            <% } else if (subscription.status === 'pending') { %>
+              <div class="actions">
+                <form method="post" action="/admin/subscriptions/<%= subscription.subscriptionId %>/approve" class="inline">
+                  <button type="submit">Approve</button>
+                </form>
+                <form method="post" action="/admin/subscriptions/<%= subscription.subscriptionId %>/reject" class="inline-form" novalidate>
+                  <div class="field">
+                    <label for="reason<%= subscription.subscriptionId %>">Reason</label>
+                    <input id="reason<%= subscription.subscriptionId %>" name="reason" type="text" maxlength="500" required>
+                  </div>
+                  <button type="submit" class="danger">Reject</button>
+                </form>
+              </div>
+            <% } else if (subscription.status === 'approved') { %>
+              <%= formatDateTime(subscription.startsAt) %> – <%= formatDateTime(subscription.endsAt) %><br>
+              <span class="small muted">by <%= subscription.reviewerEmail || '-' %></span>
+            <% } else { %>
+              Reason: <%= subscription.reviewNote %><br>
+              <span class="small muted">by <%= subscription.reviewerEmail || '-' %></span>
+            <% } %>
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table></div>
+</main>
+<%- include('../partials/foot') %>

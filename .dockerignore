@@ -1,0 +1,11 @@
+# ไม่ส่งเข้า image: dependency (ติดตั้งใหม่ใน container), ความลับ, ไฟล์ที่อัปโหลด และ git
+node_modules
+.env
+uploads
+.git
+.gitattributes
+.gitignore
+*.log
+README.md
+Dockerfile
+docker-compose.yml

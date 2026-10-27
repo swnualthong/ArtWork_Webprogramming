@@ -1,0 +1,36 @@
+<%# เมนูซ่อนตามสิทธิ์เพื่อให้ใช้ง่ายเท่านั้น Server ตรวจสิทธิ์ทุก route อยู่แล้ว %>
+<header class="site-header">
+  <div class="bar">
+    <a class="brand" href="/app/home">Artwork</a>
+    <% if (locals.me) { %>
+      <nav class="nav" aria-label="Main menu">
+        <% const menuItems = [
+          ['/app/home', 'Home', 'artwork.read'],
+          ['/app/search', 'Search', 'artwork.read'],
+          ['/app/library', 'Library', 'library.read'],
+          ['/app/profile', 'Profile', 'profile.read'],
+        ]; %>
+        <% for (const [href, label, permissionKey] of menuItems) { %>
+          <% if (me.can(permissionKey)) { %>
+            <a href="<%= href %>"<% if ((locals.currentPath || '').startsWith(href)) { %> aria-current="page"<% } %>><%= label %></a>
+          <% } %>
+        <% } %>
+      </nav>
+      <div class="account">
+        <% if (me.actor.isGuest) { %>
+          <a class="button" href="/login?next=<%= encodeURIComponent(locals.currentPath || '/app/home') %>">Log in</a>
+          <a href="/register">Sign up</a>
+        <% } else { %>
+          <a class="byline account-name" href="/app/users/<%= me.actor.userId %>">
+            <img class="avatar" src="/app/users/<%= me.actor.userId %>/avatar" alt="">
+            <span class="small"><%= me.actor.displayName %> · <%= me.actor.roleName %></span>
+          </a>
+          <% if (me.canControlCenter) { %><a href="/admin">Admin</a><% } %>
+          <form method="post" action="/logout" class="inline">
+            <button type="submit" class="secondary">Log out</button>
+          </form>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</header>

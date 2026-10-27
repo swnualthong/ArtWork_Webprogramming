@@ -1,0 +1,12 @@
+<%# ต้องมี pagination = { page, totalPages } และ pagerBase (URL ที่ลงท้ายด้วย ? หรือ &) %>
+<% if (pagination.totalPages > 1) { %>
+  <nav class="pager" aria-label="Pages">
+    <% if (pagination.page > 1) { %>
+      <a class="button secondary" href="<%= pagerBase %>page=<%= pagination.page - 1 %>">Previous</a>
+    <% } %>
+    <span class="small"><%= pagination.page %> / <%= pagination.totalPages %></span>
+    <% if (pagination.page < pagination.totalPages) { %>
+      <a class="button secondary" href="<%= pagerBase %>page=<%= pagination.page + 1 %>">Next</a>
+    <% } %>
+  </nav>
+<% } %>

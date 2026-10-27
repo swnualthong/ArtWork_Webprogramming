@@ -1,0 +1,33 @@
+<%- include('../partials/head', { title: 'Search' }) %>
+<%- include('../partials/siteHeader') %>
+<main class="container">
+  <h1>Search</h1>
+  <form method="get" action="/app/search" class="inline-form" role="search">
+    <div class="field">
+      <label for="searchText">Keyword</label>
+      <input id="searchText" name="q" type="search" maxlength="100" required value="<%= searchText %>">
+    </div>
+    <div class="field field-narrow">
+      <label for="searchType">In</label>
+      <select id="searchType" name="type">
+        <% for (const [value, label] of [['all', 'All'], ['artist', 'Artist'], ['title', 'Title'], ['tag', 'Tag']]) { %>
+          <option value="<%= value %>"<% if (searchType === value) { %> selected<% } %>><%= label %></option>
+        <% } %>
+      </select>
+    </div>
+    <button type="submit">Search</button>
+  </form>
+  <%- include('../partials/flash') %>
+  <% if (result) { %>
+    <% if (result.total === 0) { %>
+      <p class="empty">No results</p>
+    <% } else { %>
+      <p class="muted"><%= result.total %> found</p>
+      <div class="grid">
+        <% for (const artwork of result.items) { %><%- include('../partials/artworkCard', { artwork }) %><% } %>
+      </div>
+      <%- include('../partials/pager', { pagination: result }) %>
+    <% } %>
+  <% } %>
+</main>
+<%- include('../partials/foot') %>

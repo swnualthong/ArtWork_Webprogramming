@@ -1,0 +1,19 @@
+<%- include('../partials/head', { title: 'Library' }) %>
+<%- include('../partials/siteHeader') %>
+<main class="container">
+  <h1>Library</h1>
+  <%- include('../partials/flash') %>
+  <% if (items.length === 0) { %>
+    <p class="empty">No downloads yet</p>
+  <% } else { %>
+    <% if (!me.can('file.download')) { %>
+      <p class="message">สมาชิกหมดอายุ · <a href="/app/subscription">Renew</a></p>
+    <% } %>
+    <div class="grid">
+      <% for (const item of items) { %>
+        <%- include('../partials/artworkCard', { artwork: item, cardNote: `Downloaded ${formatDateTime(item.lastDownloadedAt)}` }) %>
+      <% } %>
+    </div>
+  <% } %>
+</main>
+<%- include('../partials/foot') %>

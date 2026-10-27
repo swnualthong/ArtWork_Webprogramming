@@ -1,0 +1,68 @@
+<%- include('../partials/head', { title: 'Subscription' }) %>
+<%- include('../partials/siteHeader') %>
+<% const statusLabels = { pending: 'Pending', approved: 'Approved', rejected: 'Rejected' }; %>
+<% const statusBadges = { pending: 'warning', approved: 'success', rejected: 'danger' }; %>
+<main class="container">
+  <p class="small"><a href="/app/profile">← Profile</a></p>
+  <%- include('../partials/flash') %>
+  <section id="subscription" aria-labelledby="subscriptionHeading">
+    <h1 id="subscriptionHeading">Subscription</h1>
+    <p>
+      <% if (subscriptionData.activeUntil) { %>
+        Active until <strong><%= formatDateTime(subscriptionData.activeUntil) %></strong>
+      <% } else { %>
+        <%= subscriptionData.priceThb %> บาท / <%= subscriptionData.periodDays %> วัน · โอนแล้วแนบสลิป
+      <% } %>
+      <% if (subscriptionData.hasPending) { %>· Request pending<% } %>
+    </p>
+    <% if (canSubmitSubscription && !subscriptionData.hasPending) { %>
+      <form method="post" action="/app/subscriptions" enctype="multipart/form-data" class="inline-form form-narrow" novalidate>
+        <div class="field">
+          <label for="slip">Payment slip (jpg, png, webp, max 5 MB)</label>
+          <input id="slip" name="slip" type="file" accept=".jpg,.jpeg,.png,.webp" required>
+        </div>
+        <button type="submit">Submit</button>
+      </form>
+    <% } %>
+
+    <h3>History</h3>
+    <div class="table-wrap"><table>
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Submitted</th>
+          <th scope="col">Status</th>
+          <th scope="col">Details</th>
+          <th scope="col">Slip</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (subscriptionData.items.length === 0) { %>
+          <tr><td colspan="5" class="muted">No requests yet</td></tr>
+        <% } %>
+        <% for (const item of subscriptionData.items) { %>
+          <tr>
+            <td>#<%= item.subscriptionId %></td>
+            <td><%= formatDateTime(item.requestedAt) %></td>
+            <td><span class="badge <%= statusBadges[item.status] %>"><%= statusLabels[item.status] %></span></td>
+            <td>
+              <% if (item.status === 'approved') { %>
+                <%= formatDateTime(item.startsAt) %> – <%= formatDateTime(item.endsAt) %>
+              <% } else if (item.status === 'rejected') { %>
+                Reason: <%= item.reviewNote %>
+              <% } else { %>
+                -
+              <% } %>
+            </td>
+            <td>
+              <% if (item.slipFileId) { %>
+                <a href="/app/subscriptions/<%= item.subscriptionId %>/slip" target="_blank" rel="noopener">View</a>
+              <% } else { %>-<% } %>
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table></div>
+  </section>
+</main>
+<%- include('../partials/foot') %>

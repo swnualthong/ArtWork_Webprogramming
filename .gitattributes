@@ -1,0 +1,8 @@
+# เก็บและ checkout เป็น LF ทุกเครื่อง (Windows ด้วย) ให้ไฟล์ที่ใช้ใน container ไม่มี CR ปน
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.zip binary

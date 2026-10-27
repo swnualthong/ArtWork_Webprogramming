@@ -1,0 +1,29 @@
+<%# ต้องมี artwork ส่ง large หรือ cardNote เพิ่มได้ ยอดถูกใจ/ดาวน์โหลดแสดงเมื่อมี likeCount %>
+<% const isMembersOnly = artwork.visibility === 'subscriber'; %>
+<% const isLocked = isMembersOnly && (me.actor.isGuest || !me.can('file.download')); %>
+<article class="card<%= locals.large ? ' card-large' : '' %>">
+  <a class="cover-link" href="/app/artworks/<%= artwork.artworkId %>">
+    <div class="cover<%= isLocked ? ' locked' : '' %>"<% if (isLocked) { %> data-protected<% } %>>
+      <img src="/api/artworks/<%= artwork.artworkId %>/preview" alt="<%= artwork.title %>" loading="lazy" draggable="false" data-fallback>
+      <% if (artwork.visibility) { %>
+        <span class="ribbon <%= isMembersOnly ? 'members' : 'free' %>"><%= isMembersOnly ? 'Members' : 'Free' %></span>
+      <% } %>
+      <% if (artwork.imageCount > 1) { %>
+        <span class="image-count" aria-label="<%= artwork.imageCount %> images">⧉ <%= artwork.imageCount %></span>
+      <% } %>
+    </div>
+  </a>
+  <div class="card-body">
+    <p class="card-title"><a href="/app/artworks/<%= artwork.artworkId %>"><%= artwork.title %></a></p>
+    <div class="card-foot">
+      <a class="byline" href="/app/users/<%= artwork.artistId %>">
+        <img class="avatar" src="/app/users/<%= artwork.artistId %>/avatar" alt="" loading="lazy">
+        <%= artwork.artistName %>
+      </a>
+      <% if (artwork.likeCount !== undefined) { %>
+        <span class="stats" aria-label="<%= artwork.likeCount %> likes · <%= artwork.downloadCount %> downloads">♥ <%= artwork.likeCount %> · ↓ <%= artwork.downloadCount %></span>
+      <% } %>
+    </div>
+    <% if (locals.cardNote) { %><p class="card-meta"><%= cardNote %></p><% } %>
+  </div>
+</article>
